@@ -168,7 +168,7 @@ function init() {
 				  "gsi-std": {
 					"type": "raster",
 					"tiles": [
-					  "https://tile.mierune.co.jp/mierune/{z}/{x}/{y}.png"
+					  "https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}.png"
 					], // MIERUNEのタイルURL 
 					"tileSize": 256,
 					"attribution": "© Maptiles by MIERUNE, under CC BY. Data by OpenStreetMap contributors, under ODbL."
