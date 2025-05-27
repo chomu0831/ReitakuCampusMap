@@ -1,1 +1,1 @@
-# ReitakuCampusMap
+# OpenCampusMap
