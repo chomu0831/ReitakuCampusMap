@@ -214,7 +214,7 @@ function init() {
 						tiles: [
 							'https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png'					],
 						tileSize: 256,
-						attribution: '© Maptiles by MIERUNE, under CC BY. Data by OpenStreetMap contributors, under ODbL.'
+						attribution: '© Maptiles by 国土地理院, under CC BY. Data by OpenStreetMap contributors, under ODbL.'
 					}
 				},
 				layers: [
