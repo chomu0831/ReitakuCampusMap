@@ -168,7 +168,7 @@ function init() {
 				  "gsi-std": {
 					"type": "raster",
 					"tiles": [
-					  "https://stamen-tiles.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.jpg"
+					  "https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}.png"
 					], // StamenのタイルURL 
 					"tileSize": 256,
 					"attribution": "© Maptiles by Stamen, under CC BY. Data by OpenStreetMap contributors, under ODbL."
@@ -212,8 +212,7 @@ function init() {
 					'mierune-std': {
 						type: 'raster',
 						tiles: [
-							'https://stamen-tiles.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.jpg'
-						],
+							'https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg'					],
 						tileSize: 256,
 						attribution: '© Maptiles by MIERUNE, under CC BY. Data by OpenStreetMap contributors, under ODbL.'
 					}
