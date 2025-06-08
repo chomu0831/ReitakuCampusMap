@@ -1,4 +1,3 @@
-
 let map; // グローバル変数として定義
 
 // Remove the DOMContentLoaded wrapper and let getdata.js handle initialization
@@ -565,6 +564,66 @@ function init() {
 
 	addRouteOnClick();
 
+// --- ここから現在地表示機能 ---
+let currentLocationMarker = null;
+
+function showCurrentLocation() {
+    if (!navigator.geolocation) {
+        alert('現在地情報が取得できません（ブラウザ非対応）');
+        return;
+    }
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const { latitude, longitude } = position.coords;
+            // 既存の現在地マーカーを削除
+            if (currentLocationMarker) {
+                currentLocationMarker.remove();
+            }
+            // 現在地マーカーを作成
+            const el = document.createElement('div');
+            el.style.width = '24px';
+            el.style.height = '24px';
+            el.style.background = 'rgba(0,123,255,0.8)';
+            el.style.border = '3px solid white';
+            el.style.borderRadius = '50%';
+            el.style.boxShadow = '0 0 8px #007bff';
+            el.style.zIndex = 2000;
+            el.title = '現在地';
+
+            currentLocationMarker = new maplibregl.Marker({ element: el })
+                .setLngLat([longitude, latitude])
+                .addTo(map);
+
+            // 地図を現在地に移動
+            map.flyTo({ center: [longitude, latitude], zoom: 17 });
+        },
+        (error) => {
+            alert('現在地の取得に失敗しました');
+            console.error(error);
+        }
+    );
+}
+
+// ボタンを追加（HTML側にボタンがなければ自動で追加）
+if (!document.getElementById('current-location-btn')) {
+    const btn = document.createElement('button');
+    btn.id = 'current-location-btn';
+    btn.textContent = '現在地表示';
+    btn.style.position = 'absolute';
+    btn.style.top = '10px';
+    btn.style.right = '10px';
+    btn.style.zIndex = 1001;
+    btn.style.padding = '8px 16px';
+    btn.style.background = '#007bff';
+    btn.style.color = '#fff';
+    btn.style.border = 'none';
+    btn.style.borderRadius = '4px';
+    btn.style.cursor = 'pointer';
+    btn.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+    document.body.appendChild(btn);
+    btn.addEventListener('click', showCurrentLocation);
+}
+// --- 現在地表示機能ここまで ---
 }
 
 // Keep these functions outside init() as they're used globally
