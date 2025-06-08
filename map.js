@@ -1,3 +1,4 @@
+
 let map; // グローバル変数として定義
 
 // Remove the DOMContentLoaded wrapper and let getdata.js handle initialization
@@ -30,17 +31,12 @@ function init() {
 		}
 	});
 	
-	// ...existing code...
 	let lastClickedMarker = null; // 最後にクリックしたマーカーを追跡
 	// 言語切り替え設定
 	 let currentLanguage = 'japanese'; // 初期言語
 	function setLanguage(language) {
 		currentLanguage = language;
 		regenerateLeftPanel(); // 左パネルを再生成
-		// if (lastClickedMarker) {
-		//      lastClickedMarker.getElement().click(); // 最後にクリックしたマーカーを再クリックして更新
-		// }
-		//  updateTextContent();
 	}
 
 	function updateTextContent() { // ここを追加
@@ -53,12 +49,6 @@ function init() {
 			}
 		});
 	}
-
-	// ボタンクリックイベントを登録
-	// document.getElementById('language-toggle-button').addEventListener('click', () => {
-	//     const newLanguage = currentLanguage === 'japanese' ? 'english' : 'japanese';
-	//     setLanguage(newLanguage);
-	// });
 
 	// Replace language button event listener with toggle
 	document.getElementById('languageToggle').addEventListener('change', function(e) {
@@ -76,9 +66,6 @@ function init() {
 			: (isVisible ? 'ツール' : 'ツールを表示');
 	});
 
-	// document.getElementById('add-geojson-layer-button').addEventListener('click', addGeoJsonLayer);
-	// document.getElementById('remove-geojson-layer-button').addEventListener('click', removeGeoJsonLayer);
-
 	// 初期メッセージを設定
 	  document.getElementById('info').innerHTML = '言語の選択とアイコンをクリックまたはタップして詳細を表示';
 		const element = document.getElementById('info');
@@ -94,31 +81,29 @@ function init() {
 
 
 
-
-	// Mapboxのアクセストークン
-	// mapboxgl.accessToken = 'pk.eyJ1IjoieW9oamFwYW4iLCJhIjoiY2xnYnRoOGVmMDFsbTNtbzR0eXV6a2IwZCJ9.kJYURwlqIx_cpXvi66N0uw';
-	// mapboxgl.accessToken = 'pk.eyJ1IjoieW9obWFuIiwiYSI6IkxuRThfNFkifQ.u2xRJMiChx914U7mOZMiZw';
-
 	// データを取得
 	let rows = data.main.values;
+	let allRows = data.main.values; // 全データを保持
+
+	// 検索ボックスのイベントリスナーを追加
+	const markerSearch = document.getElementById('marker-search');
+	if (markerSearch) {
+		markerSearch.addEventListener('input', function(e) {
+			const keyword = e.target.value.trim().toLowerCase();
+			if (!keyword) {
+				rows = allRows;
+			} else {
+				rows = allRows.filter(row => {
+					const jName = (row[2] || '').toLowerCase();
+					const eName = (row[3] || '').toLowerCase();
+					return jName.includes(keyword) || eName.includes(keyword);
+				});
+			}
+			initMap(true); // 位置を維持して再描画
+		});
+	}
 	let markers = [];
 	initMap();
-
-	// filter rows based on marker-filter dropdown
-	// const dropdown = document.getElementById('marker-filter');
-	// dropdown.addEventListener('change', function() {
-	//     const category = parseInt(dropdown.value);
-	//     console.log(category);
-	//     if (category == -1) {
-	//         console.log('all');
-	//         rows = data.main.values;
-	//     } else {
-	//         console.log('filtered');
-	//         rows = data.main.values.filter(row => parseInt(row[1]) === category);
-	//     }
-		
-	//     initMap();
-	// });
 
 	// current marker idの変数
 	let currentMarkerId = null;
@@ -162,29 +147,7 @@ function init() {
 		if (!map) {
 			map = new maplibregl.Map({
 			container: 'map',
-			style: {
-				"version": 8,
-				"sources": {
-				  "gsi-std": {
-					"type": "raster",
-					"tiles": [
-					  "https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png"
-					], // StamenのタイルURL 
-					"tileSize": 256,
-					"attribution": "© Maptiles by 国土地理院, under CC BY. Data by OpenStreetMap contributors, under ODbL."
-				  }
-				},
-				"layers": [
-				  {
-					"id": "gsi-std-layer",
-					"type": "raster",
-					"source": "gsi-std",
-					"minzoom": 0,
-					"maxzoom": 18
-				  }
-				]
-			  },
-			
+			style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
 			center: [centerLon, centerLat],
 			// zoom: 15
 			});
@@ -206,27 +169,7 @@ function init() {
 
 		const mapDropdown = document.getElementById('map-style-dropdown');
 		const mapStyles = {
-			'normal': {
-				version: 8,
-				sources: {
-					'mierune-std': {
-						type: 'raster',
-						tiles: [
-							'https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png'					],
-						tileSize: 256,
-						attribution: '© Maptiles by 国土地理院, under CC BY. Data by OpenStreetMap contributors, under ODbL.'
-					}
-				},
-				layers: [
-					{
-						id: 'mierune-std-layer',
-						type: 'raster',
-						source: 'mierune-std',
-						minzoom: 0,
-						maxzoom: 18
-					}
-				]
-			},
+			'normal': 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
 			'2023': {
 				version: 8,
 				sources: {
@@ -332,7 +275,8 @@ function init() {
 			markers.push(marker);
 			customMarker.title = currentLanguage === 'japanese' ? jName : eName;
 
-			marker.getElement().addEventListener('click', () => {
+			marker.getElement().addEventListener('click', (event) => {
+				event.stopPropagation(); // ←これを追加
 				// If same marker is clicked again, do nothing
 				if (lastClickedMarker === marker) {
 					document.getElementById('info').innerHTML = 'マーカーをクリックまたはタップして詳細を表示';
@@ -358,8 +302,6 @@ function init() {
 
 				currentMarkerId = id;
 				const leftPanel = document.getElementById('left-panel');
-				const rightPanel = document.getElementById('right-panel');
-				const mapElement = document.getElementById('map');
 				
 				// Reset slide index when new marker is clicked
 				slideIndex = 1;
@@ -430,24 +372,7 @@ function init() {
 	}
 
 	// 初期設定
-	// initMap();
-
 	// filter rows based on marker-filter dropdown
-	const markerFilterDropdown = document.getElementById('marker-filter');
-	// markerFilterDropdown.addEventListener('change', function() {
-	//     const category = parseInt(markerFilterDropdown.value);
-	//     console.log(category);
-	//     if (category == -1) {
-	//         console.log('all');
-	//         rows = data.main.values;
-	//     } else {
-	//         console.log('filtered');
-	//         rows = data.main.values.filter(row => parseInt(row[1]) === category);
-	//     }
-		
-	//     initMap();
-	// });
-
 	// Replace the 3D button event listeners with this:
 	document.getElementById('threeDToggle').addEventListener('change', function(e) {
 		if (e.target.checked) {
@@ -521,6 +446,125 @@ function init() {
 			: (isVisible ? 'Show map options' : 'Hide map options');
 	});
 
+	// 正門の座標（例：データから取得する場合は自動化してください）
+	const GATE_NAME = '正門';
+	let gateLat = null, gateLon = null;
+
+	// rowsから正門の座標を取得
+	function findGateLatLon() {
+		const gateRow = data.main.values.find(row => row[2] === GATE_NAME);
+		if (gateRow) {
+			gateLat = parseFloat(gateRow[4]);
+			gateLon = parseFloat(gateRow[5]);
+		}
+	}
+
+	// ルートレイヤーを管理
+	let routeLayerId = 'osrm-route-layer';
+	let routeSourceId = 'osrm-route-source';
+
+	// 地図初期化後にクリックイベントを追加
+	function addRouteOnClick() {
+		let routePopup = null;
+		map.on('click', async (e) => {
+			 // クリック地点が既存マーカーの座標と一致する場合はルート検索しない
+			const clickLng = e.lngLat.lng;
+			const clickLat = e.lngLat.lat;
+			const threshold = 0.00005; // 緯度経度の許容誤差（約5m）
+
+			// allRowsは全マーカー情報
+			const isMarkerClicked = allRows.some(row => {
+				const markerLat = parseFloat(row[4]);
+				const markerLon = parseFloat(row[5]);
+				return (
+					Math.abs(markerLat - clickLat) < threshold &&
+					Math.abs(markerLon - clickLng) < threshold
+				);
+			});
+
+			if (isMarkerClicked) {
+				// マーカー上のクリックなら何もしない
+				return;
+			}
+			else if (gateLat === null || gateLon === null) {
+				findGateLatLon();
+				if (gateLat === null || gateLon === null) {
+					alert('正門の座標が見つかりません');
+					return;
+				}
+			}
+			const start = [e.lngLat.lng, e.lngLat.lat];
+			const end = [gateLon, gateLat];
+			// OSRMサーバーのURL（公開サーバー）
+			const osrmUrl = `https://router.project-osrm.org/route/v1/foot/${start[0]},${start[1]};${end[0]},${end[1]}?overview=full&geometries=geojson`;
+
+			try {
+				const res = await fetch(osrmUrl);
+				const json = await res.json();
+				if (!json.routes || json.routes.length === 0) {
+					alert('ルートが見つかりません');
+					return;
+				}
+				const route = json.routes[0].geometry;
+
+				// 既存ルートを削除
+				if (map.getLayer(routeLayerId)) map.removeLayer(routeLayerId);
+				if (map.getSource(routeSourceId)) map.removeSource(routeSourceId);
+				if (routePopup) {
+					routePopup.remove();
+					routePopup = null;
+				}
+
+				// ルートをGeoJSONとして追加
+				map.addSource(routeSourceId, {
+					type: 'geojson',
+					data: {
+						type: 'Feature',
+						geometry: route
+					}
+				});
+				const distance = json.routes[0].distance; // meters
+				const walkingSpeed = 1.3; // m/s (約4.7km/h)
+				const durationSeconds = distance / walkingSpeed;
+				const durationMinutes = Math.round(durationSeconds / 60);
+
+				const infoDiv = document.getElementById('info');
+				if (infoDiv) {
+					const distanceKm = (distance / 1000).toFixed(2);
+					const timeText = currentLanguage === 'japanese'
+						? `距離: ${distanceKm}km<br>徒歩の目安: 約${durationMinutes}分`
+						: `Distance: ${distanceKm}km<br>Estimated walk: ~${durationMinutes} min`;
+					infoDiv.innerHTML = timeText + '<br>' + infoDiv.innerHTML;
+				}
+				map.addLayer({
+					id: routeLayerId,
+					type: 'line',
+					source: routeSourceId,
+					paint: {
+						'line-color': '#adff2f',
+						'line-width': 5
+					}
+				});
+				if (route.coordinates && route.coordinates.length > 1) {
+					const midIndex = Math.floor(route.coordinates.length / 2);
+					const midCoord = route.coordinates[midIndex];
+					const popupText = currentLanguage === 'japanese'
+						? `徒歩 約${durationMinutes}分`
+						: `~${durationMinutes} min walk`;
+					routePopup = new maplibregl.Popup({ closeOnClick: false, closeButton: false })
+						.setLngLat(midCoord)
+						.setHTML(`<div class="custom-popup">${popupText}</div>`)
+						.addTo(map);
+				}
+			} catch (err) {
+				alert('経路取得に失敗しました');
+				console.error(err);
+			}
+		});
+	}
+
+	addRouteOnClick();
+
 }
 
 // Keep these functions outside init() as they're used globally
@@ -559,31 +603,4 @@ function removeGeoJsonLayer() {
 		bearing: 0,
 		duration: 1000
 	});
-}// GPSボタンのクリックイベント
-document.getElementById('gps-button').addEventListener('click', () => {
-	if (!navigator.geolocation) {
-		alert('位置情報がサポートされていません');
-		return;
-	}
-
-	navigator.geolocation.getCurrentPosition(
-		(position) => {
-			const { latitude, longitude } = position.coords;
-
-			// 現在地にマーカーを追加
-			new maplibregl.Marker({ color: 'blue' })
-				.setLngLat([longitude, latitude])
-				.setPopup(new maplibregl.Popup().setText('現在地'))
-				.addTo(map);
-
-			// 地図を現在地に移動
-			map.flyTo({
-				center: [longitude, latitude],
-				zoom: 17
-			});
-		},
-		(error) => {
-			alert('位置情報の取得に失敗しました: ' + error.message);
-		}
-	);
-});
+}
