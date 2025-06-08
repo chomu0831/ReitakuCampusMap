@@ -692,3 +692,51 @@ input:checked + .lang-slider .ja,
     z-index: 10000;
     filter: drop-shadow(0 0 2px white);
 }
+
+/* --- 追加: 現在地ボタンと地図オプションボタンの重なり防止 --- */
+#current-location-btn {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 10010;
+    padding: 8px 16px;
+    background: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    font-size: 14px;
+}
+#current-location-btn:hover {
+    background: #0056b3;
+}
+
+/* PC用: 地図オプションボタンを現在地ボタンの下にずらす */
+@media (min-width: 768px) {
+    .tools-toggle, #tools-toggle {
+        position: fixed !important;
+        top: 60px !important; /* 現在地ボタンの下に配置 */
+        right: 10px !important;
+        z-index: 10000;
+    }
+}
+
+/* スマホ用: ボタンを下にずらす */
+@media (max-width: 767px) {
+    #current-location-btn {
+        top: 10px;
+        right: 10px;
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+    .tools-toggle, #tools-toggle {
+        position: fixed !important;
+        top: 55px !important; /* 現在地ボタンの下に配置 */
+        right: 10px !important;
+        z-index: 10000;
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+}
+/* --- ここまで追加 --- */
