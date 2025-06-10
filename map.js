@@ -566,53 +566,124 @@ function init() {
 
 // --- ここから現在地表示機能 ---
 let currentLocationMarker = null;
+let currentLocationWatchId = null;
+let currentHeading = 0;
+let headingAvailable = false;
 
-function showCurrentLocation() {
+// 進行方向の矢印付きマーカーを作成
+function createLocationMarker() {
+    const el = document.createElement('div');
+    el.style.width = '32px';
+    el.style.height = '32px';
+    el.style.position = 'relative';
+    el.style.zIndex = 10010;
+
+    // 青い丸
+    const circle = document.createElement('div');
+    circle.style.width = '24px';
+    circle.style.height = '24px';
+    circle.style.background = 'rgba(0,123,255,0.8)';
+    circle.style.border = '3px solid white';
+    circle.style.borderRadius = '50%';
+    circle.style.boxShadow = '0 0 8px #007bff';
+    circle.style.position = 'absolute';
+    circle.style.top = '4px';
+    circle.style.left = '4px';
+
+    // 進行方向の矢印
+    const arrow = document.createElement('div');
+    arrow.style.width = '0';
+    arrow.style.height = '0';
+    arrow.style.borderLeft = '8px solid transparent';
+    arrow.style.borderRight = '8px solid transparent';
+    arrow.style.borderBottom = '16px solid #007bff';
+    arrow.style.position = 'absolute';
+    arrow.style.top = '-6px';
+    arrow.style.left = '8px';
+    arrow.style.transform = `rotate(${currentHeading}deg)`;
+    arrow.style.transition = 'transform 0.2s';
+
+    arrow.className = 'location-arrow';
+
+    el.appendChild(circle);
+    el.appendChild(arrow);
+
+    return el;
+}
+
+// 現在地追従＋進行方向
+function startTrackingLocation() {
     if (!navigator.geolocation) {
         alert('現在地情報が取得できません（ブラウザ非対応）');
         return;
     }
-    navigator.geolocation.getCurrentPosition(
+    // 既存のwatchを停止
+    if (currentLocationWatchId) {
+        navigator.geolocation.clearWatch(currentLocationWatchId);
+        currentLocationWatchId = null;
+    }
+    // 既存マーカー削除
+    if (currentLocationMarker) {
+        currentLocationMarker.remove();
+        currentLocationMarker = null;
+    }
+
+    currentLocationWatchId = navigator.geolocation.watchPosition(
         (position) => {
             const { latitude, longitude } = position.coords;
-            // 既存の現在地マーカーを削除
-            if (currentLocationMarker) {
-                currentLocationMarker.remove();
+            // マーカーがなければ作成
+            if (!currentLocationMarker) {
+                const el = createLocationMarker();
+                currentLocationMarker = new maplibregl.Marker({ element: el, rotationAlignment: 'map' })
+                    .setLngLat([longitude, latitude])
+                    .addTo(map);
+                map.flyTo({ center: [longitude, latitude], zoom: 17 });
+            } else {
+                currentLocationMarker.setLngLat([longitude, latitude]);
             }
-            // 現在地マーカーを作成
-            const el = document.createElement('div');
-            el.style.width = '24px';
-            el.style.height = '24px';
-            el.style.background = 'rgba(0,123,255,0.8)';
-            el.style.border = '3px solid white';
-            el.style.borderRadius = '50%';
-            el.style.boxShadow = '0 0 8px #007bff';
-            el.style.zIndex = 2000;
-            el.title = '現在地';
-
-            currentLocationMarker = new maplibregl.Marker({ element: el })
-                .setLngLat([longitude, latitude])
-                .addTo(map);
-
-            // 地図を現在地に移動
-            map.flyTo({ center: [longitude, latitude], zoom: 17 });
+            // 進行方向の矢印を回転
+            const arrow = currentLocationMarker.getElement().querySelector('.location-arrow');
+            if (arrow && headingAvailable) {
+                arrow.style.transform = `rotate(${currentHeading}deg)`;
+            }
         },
         (error) => {
             alert('現在地の取得に失敗しました');
             console.error(error);
+        },
+        {
+            enableHighAccuracy: true,
+            maximumAge: 1000,
+            timeout: 10000
         }
     );
+}
+
+// 方位取得
+function handleOrientation(event) {
+    // event.alpha: 端末の北に対する回転角度（0～360度）
+    if (typeof event.alpha === 'number') {
+        currentHeading = 360 - event.alpha; // 北を0度に
+        headingAvailable = true;
+        // マーカーの矢印を回転
+        if (currentLocationMarker) {
+            const arrow = currentLocationMarker.getElement().querySelector('.location-arrow');
+            if (arrow) {
+                arrow.style.transform = `rotate(${currentHeading}deg)`;
+            }
+        }
+    }
 }
 
 // ボタンを追加（HTML側にボタンがなければ自動で追加）
 if (!document.getElementById('current-location-btn')) {
     const btn = document.createElement('button');
     btn.id = 'current-location-btn';
-    btn.textContent = '現在地表示';
-    btn.style.position = 'absolute';
+    btn.textContent = '現在地追従ON';
+    btn.style.position = 'fixed';
     btn.style.top = '10px';
     btn.style.right = '10px';
-    btn.style.zIndex = 1001;
+    btn.style.zIndex = 10010;
     btn.style.padding = '8px 16px';
     btn.style.background = '#007bff';
     btn.style.color = '#fff';
@@ -621,7 +692,11 @@ if (!document.getElementById('current-location-btn')) {
     btn.style.cursor = 'pointer';
     btn.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
     document.body.appendChild(btn);
-    btn.addEventListener('click', showCurrentLocation);
+    btn.addEventListener('click', () => {
+        startTrackingLocation();
+        window.addEventListener('deviceorientation', handleOrientation, true);
+        btn.textContent = '現在地追従中';
+    });
 }
 // --- 現在地表示機能ここまで ---
 }
